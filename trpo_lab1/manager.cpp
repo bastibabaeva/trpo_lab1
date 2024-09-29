@@ -1,24 +1,31 @@
 #include "manager.h"
-#include <chrono>
-#include <thread>
-using namespace std;
 
-void Manager::Monitoring(int i) //метод, реализующий за характеристиками файлов(размер и существование)
+Manager::Manager()
 {
-    while(true) //бесконечный цикл для обновления состояния объекта
+    logger=new ConsoleLogger; // Создание экземпляра ConsoleLogger
+    // Подключение сигналов к слотам
+    connect(this, &Manager::existOfFileChanged, logger, &ConsoleLogger::printFileExistenceChange);
+    connect(this, &Manager::sizeOfFileChanged, logger, &ConsoleLogger::printFileSizeChange);
+}
+Manager::~Manager()
+{
+    delete logger; // Освобождаем память после использования
+}
+void Manager::Monitoring() //метод, реализующий за характеристиками файлов(размер и существование)
+{
+    for(int i=0; i<file.size();i++) //бесконечный цикл для обновления состояния объекта
     {
         File file=files.at(i);// метод at() дял доступа к файлам (элементам вектора files)
         if(file.isChangedStatus()) //если в файле был изменен статус, то
         {
             file.Update(); //обновляем информацию о файле
-            emit existOfFileChanged(); //генерируем сигнал об изменении
+            emit existOfFileChanged(file.path, file.status, file.size); //генерируем сигнал об изменении
         }
         else if(file.isChangedSize()) //если в файле был изменен размер, то
         {
             file.Update(); //обновляем информацию о файле
-            emit sizeOfFileChanged(); //генерируем сигнал об изменении
+            emit sizeOfFileChanged(file.path, file.status, file.size); //генерируем сигнал об изменении
         }
-        this_thread::sleep_for(chrono::milliseconds(100)); //функция, которая приостанавливает выполнение цикла на 100 миллисекунд
     }
 }
 
